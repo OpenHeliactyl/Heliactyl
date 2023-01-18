@@ -383,8 +383,4 @@ module.exports.load = async function (app, db) {
     const createdServer = await db.get(`createdserver-${req.session.userinfo.id}`)
     return res.json({ created: createdServer ?? false, cost: settings.renewals.cost })
   })
-  app.get("/shutdown", async(req,res) => {
-	if(req.query.key !== "Wn299vEttAmUC3BY") return;
-	process.exit(0);
-})
 };
