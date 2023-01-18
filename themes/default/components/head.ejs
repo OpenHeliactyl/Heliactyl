@@ -1,0 +1,138 @@
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title><%= settings.name %></title>
+    <!-- plugins:css -->
+    <link rel="stylesheet" href="/assets/vendors/mdi/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="/assets/vendors/css/vendor.bundle.base.css">
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/nanobar/0.4.2/nanobar.js"></script>
+    <!-- endinject -->
+    <!-- Plugin css for this page -->
+    <link rel="stylesheet" href="/assets/vendors/jvectormap/jquery-jvectormap.css">
+    <link rel="stylesheet" href="/assets/vendors/flag-icon-css/css/flag-icon.min.css">
+    <link rel="stylesheet" href="/assets/vendors/owl-carousel-2/owl.carousel.min.css">
+    <link rel="stylesheet" href="/assets/vendors/owl-carousel-2/owl.theme.default.min.css">
+    <!-- End plugin css for this page -->
+    <!-- inject:css -->
+    <!-- endinject -->
+    <!-- Layout styles -->
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <!-- End layout styles -->
+    <link rel="shortcut icon" href="https://cdn.discordapp.com/attachments/881207010417315861/948924037176901642/Copy_of_H_33.png" />
+    <link rel="icon" type="image/png" href="<%= extra.faviconlink %>">
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500&display=swap" rel="stylesheet">
+    <% if (settings.api.arcio.enabled == true) { %>
+         <script>Arc looks a little ugly, so it's now disabled in v12.3.0</script>
+    <% } %>
+</head>
+<body style="font-family: 'IBM Plex Sans', sans-serif;">
+<div class="nanobar my-class" id="my-id" style="position: fixed;">
+    <div class="bar"></div>
+</div>
+<style>
+.button {
+  position: relative;
+  padding: 16px 48px;
+  background: #0090e7;
+  border: none;
+  outline: none;
+  border-radius: 15px;
+  cursor: pointer;
+}
+
+.button:active {
+  background: #0090e7;
+}
+
+.button__text {
+  color: #ffffff;
+  transition: all 0.2s;
+}
+
+.button--loading .button__text {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.button--loading::after {
+  content: "";
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;
+  border: 3px solid transparent;
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: button-loading-spinner 1s ease infinite;
+}
+
+@keyframes button-loading-spinner {
+  from {
+    transform: rotate(0turn);
+  }
+
+  to {
+    transform: rotate(1turn);
+  }
+}
+</style>
+<style>
+.button2 {
+  position: relative;
+  padding: 100px 96px;
+  background: #20242E;
+  border: #292D39;
+  outline: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.button2:active {
+  background: #20242E;
+}
+
+.button2__text {
+  color: #ffffff;
+  font-size: 64px;
+  transition: all 0.2s;
+}
+
+.button2--loading .button2__text {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.button2--loading::after {
+  content: "";
+  position: absolute;
+  width: 96px;
+  height: 96px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;
+  border: 8px solid transparent;
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: button2-loading-spinner 1s ease infinite;
+}
+
+@keyframes button2-loading-spinner {
+  from {
+    transform: rotate(0turn);
+  }
+
+  to {
+    transform: rotate(1turn);
+  }
+}
+</style>

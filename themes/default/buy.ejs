@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <%- include('./components/head') %>
+  <body>
+    <div class="container-scroller">
+      <!-- partial:partials/_sidebar.html -->
+      <%- include('./components/sidebar') %>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/1.4.0/clipboard.min.js" integrity="sha512-iJh0F10blr9SC3d0Ow1ZKHi9kt12NYa+ISlmCdlCdNZzFwjH1JppRTeAnypvUez01HroZhAmP4ro4AvZ/rG0UQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+      <!-- partial -->
+      <div class="container-fluid page-body-wrapper">
+        <!-- partial:partials/_navbar.html -->
+        <%- include('./components/topnav') %>
+        <!-- partial -->
+        <div class="main-panel">
+          <div style="background-color: #111319" class="content-wrapper">
+           <h2>Buy Coins</h2>
+           <p class="text-gray">Buy coins with your card.</p>
+            <div class="row">
+              <div class="col-md-6 grid-margin stretch-card">
+                <div class="card">
+                  <div class="card-body">
+                  <form action="/buycoins" method="GET">
+                       <div class="form-group">
+                         <label for="Amount">Money Amount (£1/<%= settings.stripe.coins %> coins):</label>
+                         <input style="border-radius: 15px; padding: 8px;" type="number" class="form-control" id="Amount" placeholder="5" name="amt">
+                       </div>
+                       <div class="form-group">
+                         <label for="InputName1">First Name:</label>
+                         <input style="border-radius: 15px; padding: 8px;" type="text" class="form-control" id="InputName1" placeholder="John" name="fn">
+                       </div>
+                       <div class="form-group">
+                         <label for="InputName2">Last Name:</label>
+                         <input style="border-radius: 15px; padding: 8px;" type="text" class="form-control" id="InputName2" placeholder="Doe" name="sn">
+                       </div>
+                       <div class="form-group">
+                         <label for="InputNumber">Credit Card Number:</label>
+                         <input style="border-radius: 15px; padding: 8px;" type="text" class="form-control" id="InputNumber" name="number" placeholder="00000000000000">
+                       </div>
+                       <div class="form-group">
+                         <label for="InputCVV">CVV:</label>
+                         <input style="border-radius: 15px; padding: 8px;" type="text" class="form-control" id="InputCVV" name="vrf" placeholder="000">
+                       </div>
+                       <div class="form-group">
+                         <label for="InputExpir">Expiration Date:</label>
+                         <center>
+                         <div class="row mx-auto">
+                         <select style="border-radius: 15px; padding: 8px;" class="form-control mx-auto" style="width:45% !important;" name="month"><option value="1">1st</option><option value="2">2nd</option><option value="3">3rd</option><option value="4">4th</option><option value="5">5th</option><option value="6">6th</option><option value="7">7th</option><option value="8">8th</option><option value="9">9th</option><option value="10">10th</option><option value="11">11th</option><option value="12">12th</option></select><br><br>
+                         <select style="border-radius: 15px; padding: 8px;" class="form-control mx-auto" style="width:45% !important;" name="year"><option value="2022">2022</option><option value="2023">2023</option><option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option><option value="2027">2027</option><option value="2028">2028</option><option value="2029">2029</option><option value="2030">2030</option><option value="2031">2031</option><option value="2032">2032</option><option value="2033">2033</option></select>
+                         </div>
+                         </center>
+                        <br>
+                         <button class="btn btn-primary btn-lg text-white" type="submit">Buy</button>
+                         </form>
+                     </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- content-wrapper ends -->
+          <%- include('./components/footer') %>
+        </div>
+        <!-- main-panel ends -->
+      </div>
+      <!-- page-body-wrapper ends -->
+    </div>
+    <!-- container-scroller -->
+    <!-- plugins:js -->
+    <!-- endinject -->
+    <!-- Plugin js for this page -->
+    <script src="/assets/vendors/select2/select2.min.js"></script>
+    <script src="/assets/vendors/typeahead.js/typeahead.bundle.min.js"></script>
+    <!-- End plugin js for this page -->
+    <%- include('./components/scripts') %>
+    <!-- Custom js for this page -->
+    <script src="/assets/js/file-upload.js"></script>
+    <script src="/assets/js/typeahead.js"></script>
+    <script src="/assets/js/select2.js"></script>
+    <!-- End custom js for this page -->
+    <style>
+.alertbtn {
+  margin-left: 15px;
+  color: white;
+  font-weight: bold;
+  float: right;
+  font-size: 22px;
+  line-height: 20px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+   </style>
+  </body>
+</html>

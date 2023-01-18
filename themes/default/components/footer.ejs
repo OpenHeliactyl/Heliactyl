@@ -1,0 +1,27 @@
+<footer style="background-color: #161820" class="footer">
+    <div class="d-sm-flex justify-content-center justify-content-sm-between">
+      <!-- 
+
+     ++ WARNING! ++
+      
+
+      Removing Heliactyl credits will result in a DMCA takedown against the dashboard if used in public
+      You are free to move the credits if you are theming Heliactyl
+
+      -->
+
+      <span class="text-muted d-block text-center text-sm-left d-sm-inline-block">© <%= settings.name %> | Powered by <a style="color: white" href="https://github.com/OpenHeliactyl/Heliactyl">Heliactyl</a></span>
+      <span class="text-muted d-block text-right text-sm-left d-sm-inline-block"><code style="color: #007fcc;"">v<%= settings.version.replace(/"/g, `\\\\"`) %></code> - <span id="loadtime"></span></span>
+    </div>
+</footer>
+ <script type="text/javascript">  
+     var before_loadtime = new Date().getTime();  
+     window.onload = Pageloadtime;  
+     function Pageloadtime() {  
+         var aftr_loadtime = new Date().getTime();  
+         // Time calculating in seconds  
+         pgloadtime = (aftr_loadtime - before_loadtime) / 1000  
+  
+         document.getElementById("loadtime").innerHTML = pgloadtime + "s";  
+     }  
+</script>  

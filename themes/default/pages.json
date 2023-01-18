@@ -1,0 +1,96 @@
+{
+    "index": "index.ejs",
+    "notfound": "404.ejs",
+    "redirect": {
+        "callback": "/dashboard",
+        "logout": "/",
+        "createserver": "/servers?err=CREATED",
+        "deleteserver": "/servers",
+        "updateservers": "/servers",
+        "failedcreateserver": "/servers/new",
+        "failedmodifyserver": "/servers/edit",
+        "setplan": "/admin",
+        "failedsetplan": "/admin",
+        "createserverdisabled": "/servers/new?err=disabled",
+        "modifyserverdisabled": "/servers/modify?err=disabled",
+        "deleteserverdisabled": "/delete?err=disabled",
+        "regenpassword": "/settings",
+        "setresources": "/admin",
+        "failedsetresources": "/admin",
+        "giftresources": "/gift",
+        "failedgiftresources": "/gift",
+        "renewserver": "/dashboard",	
+        "setcoins": "/admin",	
+        "failedsetcoins": "/admin",	
+        "purchaseram": "/store",	
+        "failedpurchaseram": "/store",	
+        "purchasedisk": "/store",	
+        "failedpurchasedisk": "/store",	
+        "purchasecpu": "/store",	
+        "failedpurchasecpu": "/store",	
+        "purchaseservers": "/store",	
+        "failedpurchaseservers": "/store",
+        "arcioerror": "/afk",
+        "missingorinvalidcouponcode": "/redeem",
+        "successfullyredeemedcoupon": "/redeem",
+        "couponcreationfailed": "/admin",
+        "couponcreationsuccess": "/admin",
+        "couponrevokefailed": "/admin",
+        "couponrevokesuccess": "/admin",
+        "removeaccountfailed": "/admin",
+        "removeaccountsuccess": "/admin"
+    },
+    "pages": {
+        "dashboard": "dashboard.ejs",
+        "servers/new": "create.ejs",
+        "servers/edit": "edit.ejs",
+        "admin": "admin.ejs",
+        "admin/plans": "admin-plans.ejs",
+        "admin/resources": "admin-resources.ejs",
+        "admin/coupons": "admin-coupons.ejs",
+        "admin/coins": "admin-coins.ejs",
+        "redeem": "redeem.ejs",
+        "settings": "settings.ejs",
+        "gift-coins": "gift-coins.ejs",
+        "gift-resources": "gift-resources.ejs",
+        "j4r": "j4r.ejs",
+        "buy": "buy.ejs",
+        "afk": "afk.ejs",
+        "store": "store.ejs",
+        "servers": "servers.ejs",
+        "lv": "lv.ejs"
+    },
+    "mustbeloggedin": [
+        "/dashboard",
+        "/servers/new",
+        "/servers/edit",
+        "/settings",
+        "/j4r",
+        "/gift",
+        "/store",
+        "/coins",
+        "/lv"
+    ],
+    "mustbeadmin": [
+        "/admin",
+        "/admin/plans",
+        "/admin/resources",
+        "/admin/coupons",
+        "/admin/coins"
+    ],
+    "variables": {
+        "faviconlink": "https://cdn.discordapp.com/attachments/881207010417315861/949595064554913812/Copy_of_H_35.png",
+        "home": {
+            "note": "Name & Icon have been moved to settings.json in Heliactyl 12.5.0",
+            "admin": "admin",
+            "buttontext": {
+                "loggedin": {
+                    "link": "/dashboard"
+                },
+                "loggedout": {
+                    "link": "/login"
+                }
+            }
+        }
+    }
+}
