@@ -1,3 +1,5 @@
+![Heliactyl]([https://cdn.discordapp.com/attachments/1063585626022223892/1065304573058764850/PylexPlus_2.png])
+
 <hr>
 
 # Heliactyl • The modern client panel for Pterodactyl
