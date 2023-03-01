@@ -32,19 +32,54 @@ Please do keep the footer though.
 <hr>
 
 # Install Guide
+## 1. Configuring heliactyl
+### Pterodactyl method (easiest)
+Warning: You need Pterodactyl already set up on a domain for this method to work
 
-Warning: You need Pterodactyl already set up on a domain for Heliactyl to work
-1. Upload the file above onto a Pterodactyl NodeJS server [Download the egg from Parkervcp's GitHub Repository](https://github.com/parkervcp/eggs/blob/master/generic/nodejs/egg-node-js-generic.json)
-2. Unarchive the file and set the server to use NodeJS 16
-3. Configure settings.json (specifically panel domain/apikey and discord auth settings for it to work)
-4. Start the server (Ignore the 2 strange errors that might come up)
-5. Login to your DNS manager, point the domain you want your dashboard to be hosted on to your VPS IP address. (Example: dashboard.domain.com 192.168.0.1)
-6. Run `apt install nginx && apt install certbot` on the vps
-7. Run `ufw allow 80` and `ufw allow 443` on the vps
-8. Run `certbot certonly -d <Your Heliactyl Domain>` then do 1 and put your email
-9. Run `nano /etc/nginx/sites-enabled/heliactyl.conf`
-10. Paste the configuration at the bottom of this and replace with the IP of the pterodactyl server including the port and with the domain you want your dashboard to be hosted on.
-11. Run `systemctl restart nginx` and try open your domain.
+1.1 Upload the file above onto a Pterodactyl NodeJS server [Download the egg from Parkervcp's GitHub Repository](https://github.com/parkervcp/eggs/blob/master/generic/nodejs/egg-node-js-generic.json)
+
+1.2 Unarchive the file and set the server to use NodeJS 16
+
+### Direct method
+<strong>1.1</strong> Install nodejs16, it's recommended to install it with nvm : 
+- `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.3/install.sh | bash`
+- reopen a new ssh session (eg restart putty)
+- `nvm install 16`
+- check the node version with `node -v` and switch between versions with `nvm use <version>`
+
+<strong>1.2</strong> Download heliactyl files in /var/www/heliactyl :
+- `git clone https://github.com/OpenHeliactyl/Heliactyl.git /var/www/heliactyl`
+
+<strong>1.3</strong> Installing required node modules (and build dependencies to avoid errors) :
+- `apt-get update && apt-get install libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev build-essential`
+- `cd /var/www/heliactyl && npm i`
+
+After configuring settings.json, to start the server use `node index.js`</br>
+To run in the background use pm2 (see pm2 section) or screen</br>
+`screen -S heliactyl node index.js`</br>
+To detach from the screen do ctrl + A + D</br>
+To reatach `screen -R heliactyl`</br>
+To stop ctrl + C
+
+## 2. Setting up webserver
+
+<strong>2.1</strong>  Configure settings.json (specifically panel domain/apikey and discord auth settings for it to work)
+
+<strong>2.2</strong>  Start the server (Ignore the 2 strange errors that might come up)
+
+<strong>2.3</strong>  Login to your DNS manager, point the domain you want your dashboard to be hosted on to your VPS IP address. (Example: dashboard.domain.com 192.168.0.1)
+
+<strong>2.4</strong>  Run `apt install nginx && apt install certbot` on the vps
+
+<strong>2.5</strong>  Run `ufw allow 80` and `ufw allow 443` on the vps
+
+<strong>2.6</strong>  Run `certbot certonly -d <Your Heliactyl Domain>` then do 1 and put your email
+
+<strong>2.7</strong>  Run `nano /etc/nginx/sites-enabled/heliactyl.conf`
+
+<strong>2.8</strong> Paste the configuration at the bottom of this and replace with the IP of the pterodactyl server including the port and with the domain you want your dashboard to be hosted on.
+
+<strong>2.9</strong> Run `systemctl restart nginx` and try open your domain.
 
 # Nginx Proxy Config
 ```Nginx
