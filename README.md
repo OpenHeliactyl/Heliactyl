@@ -36,9 +36,9 @@ Please do keep the footer though.
 ### Pterodactyl method (easiest)
 Warning: You need Pterodactyl already set up on a domain for this method to work
 
-1.1 Upload the file above onto a Pterodactyl NodeJS server [Download the egg from Parkervcp's GitHub Repository](https://github.com/parkervcp/eggs/blob/master/generic/nodejs/egg-node-js-generic.json)
+<strong>1.1</strong> Upload the file above onto a Pterodactyl NodeJS server [Download the egg from Parkervcp's GitHub Repository](https://github.com/parkervcp/eggs/blob/master/generic/nodejs/egg-node-js-generic.json)
 
-1.2 Unarchive the file and set the server to use NodeJS 16
+<strong>1.2</strong> Unarchive the file and set the server to use NodeJS 16
 
 ### Direct method
 <strong>1.1</strong> Install nodejs16, it's recommended to install it with nvm : 
