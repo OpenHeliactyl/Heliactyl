@@ -64,6 +64,12 @@
           "guildid": [
             "Guild ID 1"
           ]
+        },
+        "giverole":{
+          "_comment": "Both the bot and the user must be on the server, give the specify role on registering",
+          "enabled": true,
+          "guildid": "000000000000000000",
+          "roleid": "000000000000000000"
         }
       },
       "passwordgenerator": {
