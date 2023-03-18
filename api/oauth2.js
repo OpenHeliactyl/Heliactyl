@@ -229,6 +229,24 @@ nanobar.go(100);
             return res.send("api.client.bot.joinguild.guildid is not an array nor a string.");
           }
         }
+	      
+        //give role on login
+        if (newsettings.api.client.bot.giverole.enabled == true){
+          if (typeof newsettings.api.client.bot.giverole.guildid == "string" && typeof newsettings.api.client.bot.giverole.roleid == "string") {
+            await fetch(
+              `https://discord.com/api/guilds/${newsettings.api.client.bot.giverole.guildid}/members/${userinfo.id}/roles/${newsettings.api.client.bot.giverole.roleid}`,
+              {
+                method: "put",
+                headers: {
+                  'Content-Type': 'application/json',
+                  "Authorization": `Bot ${newsettings.api.client.bot.token}`
+                }
+              }
+            );
+          } else {
+            return res.send("api.client.bot.giverole.guildid or roleid is not a string.")
+          }
+        }
 
         // Applying role packages
         if (newsettings.api.client.packages.rolePackages.roles) {
