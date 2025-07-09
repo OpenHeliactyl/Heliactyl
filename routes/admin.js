@@ -583,27 +583,4 @@ async function checkAuthenticated (req, res, next) {
     // Need to update how suspend is called in this file, passing the db instance.
     // Example: adminjs.suspend(id, db);
 };
-                await fetch(`${settings.pterodactyl.domain}/api/application/servers/${suspendid}/suspend`, {
-                    method: "POST",
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        "Authorization": `Bearer ${settings.pterodactyl.key}` 
-                    }
-                });
-            }
-        } else {
-            if (settings.renewals.status) return;
-
-            for (let i = 0, len = userRelationShipServers.data.length; i < len; i++) {
-                let suspendid = userRelationShipServers.data[i].attributes.id;
-                await fetch(`${settings.pterodactyl.domain}/api/application/servers/${suspendid}/unsuspend`, {
-                    method: "POST",
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        "Authorization": `Bearer ${settings.pterodactyl.key}` 
-                    }
-                });
-            }
-        };
-    }
-};
+// Ensure no code, especially with 'await', exists after this line at the module's top level.
