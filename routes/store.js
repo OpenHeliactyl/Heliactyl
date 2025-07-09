@@ -85,14 +85,8 @@ module.exports.load = async function(app, db) { // db is Prisma Client
   };
 
   app.get("/buyram", async (req, res) => buyResource(req, res, "ram", "RAM"));
-      `${req.session.userinfo.username} bought ${per} ${resourceName} from the store for \`${cost}\` Credits.`
-    );
-
-    res.redirect("/store?success=SUCCESS");
-  };
-
-  app.get("/buyram", async (req, res) => buyResource(req, res, "ram", "RAM"));
   app.get("/buydisk", async (req, res) => buyResource(req, res, "disk", "Disk"));
   app.get("/buycpu", async (req, res) => buyResource(req, res, "cpu", "CPU"));
   app.get("/buyservers", async (req, res) => buyResource(req, res, "servers", "Servers"));
 };
+// Removed duplicated/erroneous lines from the end of the file.
