@@ -1,6 +1,6 @@
 {
-  "name": "fixed-heliactyl",
-  "version": "12.8.0",
+  "name": "niactyl",
+  "version": "0.0.1",
   "description": "The best Pterodactyl client area.",
   "main": "index.js",
   "author": "Overnode",

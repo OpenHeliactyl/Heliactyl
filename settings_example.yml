@@ -1,7 +1,7 @@
 dev: false
 
-version: "12.8.0-prealpha-3"
-name: "Heliactyl"
+version: "v0.01"
+name: "Niactyl"
 letter: "H"
 # It's recommended to use an image of size 128x128 pixels. And for the thumbnail discord modify in handlers/log.js
 icon: "https://avatars.githubusercontent.com/u/122883790"
