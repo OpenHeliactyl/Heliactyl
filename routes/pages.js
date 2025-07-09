@@ -1,10 +1,10 @@
 const indexjs = require("../index");
 const ejs = require("ejs");
 const express = require("express");
-const getPteroUser = require('../handlers/getPteroUser');
+const { getPteroUser } = require('../handlers/getPteroUser'); // Updated import
 const { renderDataEval } = require('../handlers/dataRenderer');
 
-module.exports.load = function(app, db) {
+module.exports.load = function(app, db) { // db is Prisma Client
   app.use('/assets', express.static('./assets'));
 
   // Handle requests to the root path
@@ -21,8 +21,22 @@ module.exports.load = function(app, db) {
 
   // Handle all other requests
   app.all("*", async (req, res) => {
-    if (req.session.pterodactyl && req.session.pterodactyl.id !== await db.get(`users-${req.session.userinfo.id}`)) {
-      return res.redirect("/login?prompt=none");
+    if (req.session.pterodactyl && req.session.userinfo && req.session.userinfo.id) {
+      const userFromDb = await db.user.findUnique({
+        where: { id: req.session.userinfo.id },
+        select: { pterodactylId: true }
+      });
+      const pterodactylIdFromDb = userFromDb ? userFromDb.pterodactylId : null;
+
+      if (req.session.pterodactyl.id !== pterodactylIdFromDb) {
+        // Pterodactyl ID in session does not match the one in DB for this Discord user.
+        // This could indicate a session issue or that the link has changed.
+        // Forcing re-login is a safe default.
+        return res.redirect("/login?prompt=none&reason=ptero_id_mismatch");
+      }
+    } else if (req.session.pterodactyl && (!req.session.userinfo || !req.session.userinfo.id)) {
+      // Has Pterodactyl session but no Discord userinfo session, indicates an inconsistent state.
+      return res.redirect("/login?prompt=none&reason=missing_userinfo");
     }
 
     const theme = indexjs.get(req);

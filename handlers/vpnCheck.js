@@ -11,30 +11,58 @@ const getTemplate = require('../handlers/getTemplate').template;
  * @param {object} res - The response object.
  * @returns {Promise<boolean>} - A promise that resolves to a boolean indicating whether the IP is a VPN/proxy or not.
  */
-async function vpnCheck(key, db, ip, res) {
+async function vpnCheck(key, prisma, ip, res) { // db is now prisma
   return new Promise(async (resolve) => {
-    let ipcache = await db.get(`vpncheckcache-${ip}`);
-    let vpncheck;
+    try {
+      const now = new Date();
+      let cacheEntry = await prisma.vpnCheckCache.findUnique({
+        where: { ipAddress: ip }
+      });
 
-    if (!ipcache) {
-      vpncheck = await fetch(`https://proxycheck.io/v2/${ip}?key=${key}&vpn=1`)
-        .then(response => response.json())
-        .catch(() => null);
-    }
-
-    if (ipcache || (vpncheck && vpncheck[ip])) {
-      if (!ipcache) ipcache = vpncheck[ip].proxy;
-      await db.set(`vpncheckcache-${ip}`, ipcache, 172800000);
-
-      // Is a VPN/proxy?
-      if (ipcache === "yes") {
-        res.send(getTemplate("Detected VPN", `${settings.name} detected that you are using a VPN; Please turn it off to continue.`, true));
-        resolve(true);
-      } else {
-        resolve(false);
+      // Check if cache entry exists and is still valid
+      if (cacheEntry && cacheEntry.expiresAt > now) {
+        if (cacheEntry.isVpn) {
+          res.send(getTemplate("Detected VPN", `${settings.name} detected that you are using a VPN; Please turn it off to continue.`, true));
+          return resolve(true);
+        }
+        return resolve(false);
       }
-    } else {
-      resolve(false);
+
+      // If not cached or expired, fetch from API
+      const apiResponse = await fetch(`https://proxycheck.io/v2/${ip}?key=${key}&vpn=1`);
+      if (!apiResponse.ok) {
+        console.error(`VPN Check API Error for IP ${ip}: ${apiResponse.status} ${apiResponse.statusText}`);
+        // Decide how to handle API errors: fail open (assume not VPN) or closed (block)
+        // For now, fail open:
+        return resolve(false);
+      }
+
+      const vpnData = await apiResponse.json();
+
+      if (vpnData && vpnData[ip]) {
+        const isProxy = vpnData[ip].proxy === "yes";
+        const expiryTimeMs = 172800000; // 2 days
+        const expiresAt = new Date(now.getTime() + expiryTimeMs);
+
+        await prisma.vpnCheckCache.upsert({
+          where: { ipAddress: ip },
+          update: { isVpn: isProxy, checkedAt: now, expiresAt: expiresAt },
+          create: { ipAddress: ip, isVpn: isProxy, checkedAt: now, expiresAt: expiresAt }
+        });
+
+        if (isProxy) {
+          res.send(getTemplate("Detected VPN", `${settings.name} detected that you are using a VPN; Please turn it off to continue.`, true));
+          return resolve(true);
+        }
+        return resolve(false);
+      } else {
+        // API did not return expected data for the IP
+        console.warn(`VPN Check: No data for IP ${ip} in API response.`, vpnData);
+        return resolve(false); // Fail open
+      }
+    } catch (error) {
+      console.error(`Error during VPN check for IP ${ip}:`, error);
+      resolve(false); // Fail open on any other error
     }
   });
 }

@@ -51,7 +51,21 @@ adsense:
   enabled: false
   script: ''
 
-database: "database.sqlite"
+database:
+  # PostgreSQL connection details.
+  # These will be used by the application to connect to your database.
+  # IMPORTANT: For Prisma CLI commands (e.g., `npx prisma db push`), you will need to
+  # separately provide the DATABASE_URL environment variable constructed from these settings.
+  # Example: DATABASE_URL="postgresql://user:password@host:port/dbname?schema=public"
+  # See DATABASE_SETUP.md for more details.
+  driver: "postgresql" # Indicates the database type
+  host: "localhost"
+  port: 5432
+  user: "heliactyl_user"
+  password: "your_strong_password" # Ensure this is changed and settings.yml is secured if it contains real passwords.
+  name: "heliactyl_db"    # Database name
+  schema: "public"        # Default schema
+
 api:
   enabled: true
   code: "Default APIKEY (Change this to any string you want)"

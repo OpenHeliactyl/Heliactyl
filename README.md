@@ -47,15 +47,17 @@
 
 - `apt-get update && apt-get install libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev build-essential`
 - `cd /var/www/heliactyl && npm i`
+- **Important Database Change:** This version of Heliactyl now uses PostgreSQL. Database connection for the application runtime is configured in `settings.yml`. Please refer to [DATABASE_SETUP.md](DATABASE_SETUP.md) for detailed instructions on setting up PostgreSQL and configuring Heliactyl. The `build-essential` dependencies listed above might still be useful for other Node.js native modules.
 
-After configuring settings.json, to start the server, use `node index.js`</br>
+After configuring `settings.yml` (including the new `database` section as per [DATABASE_SETUP.md](DATABASE_SETUP.md)), to start the server, use `node index.js`.</br>
 To run in the background, use PM2 (see PM2 section)</br>
 
 ## 2. Setting up webserver
 
-1. Rename settings_example.yml to settings.yml and configure settings.yml (specify panel domain/apikey and discord auth settings for it to work)
+1. Configure `settings.yml` (rename from `settings_example.yml` if needed). This now includes general application settings (panel domain/API key, Discord OAuth) **and the PostgreSQL database connection details** for the application runtime. Refer to [DATABASE_SETUP.md](DATABASE_SETUP.md) for guidance on the `database` section.
+2. After installing dependencies with `npm install`, apply the initial database schema by running `DATABASE_URL="your_constructed_db_url" npx prisma db push` in the Heliactyl root directory. **See [DATABASE_SETUP.md](DATABASE_SETUP.md) for how to construct this URL and why it's needed for Prisma CLI commands.**
 
-2. Start the server (Ignore the 2 strange errors that might come up)
+3. Start the server.
 
 3. Login to your DNS manager, point the domain you want your dashboard to be hosted on to your VPS IP address. (Example: dashboard.domain.com 192.168.0.1)
 
@@ -111,20 +113,31 @@ server {
 
 ## Updating
 
-### From Heliactyl v11/v13 or Dashactyl v0.4 to Heliactyl v12:
+### From Older SQLite-based Versions (e.g., Heliactyl v11/v13, Dashactyl v0.4) to This PostgreSQL Version:
 
-1. Store certain things such as your api keys, discord auth settings, etc in a .txt file
-2. Download database.sqlite
-3. Delete all files off the server (or delete and remake the folder if done in ssh)
-4. Upload the latest Heliactyl v12 release and unzip it
-5. Upload database.sqlite and reconfigure settings.yml
+**Important:** This version uses PostgreSQL and Prisma, which is a significant change from the SQLite (`database.sqlite`) based versions. Direct upgrade by replacing files and reusing `database.sqlite` is **not possible**.
 
-### Move to Heliactyl 14+:
+1.  **Backup Your Existing Data:**
+    *   Securely back up your `database.sqlite` file.
+    *   Back up your `settings.yml` and any other custom configuration files.
+2.  **Set Up New Instance:** Follow the main installation guide in this README to set up a fresh instance of this version, including setting up PostgreSQL as per [DATABASE_SETUP.md](DATABASE_SETUP.md).
+3.  **Data Migration (Manual & Complex):**
+    *   Migrating data from SQLite to the new PostgreSQL schema is a manual process and will require custom scripting. You would need to:
+        *   Understand the old SQLite schema (likely a key-value store similar to what was refactored).
+        *   Understand the new PostgreSQL schema defined in `prisma/schema.prisma`.
+        *   Write scripts to extract data from SQLite, transform it, and load it into the PostgreSQL database using Prisma Client or direct SQL.
+    *   **This project does not currently provide an automated migration script.** Data migration complexity will depend on how much data and what types of data (users, coupons, etc.) you need to preserve.
+    *   Consider starting fresh if data migration is too complex for your needs.
+4.  **Reconfigure `settings.yml` and other settings as needed.**
 
-1. Delete everything except database.sqlite
-2. Put the files that you didn't delete into a zip file
-3. Upload the latest Heliactyl release and unzip it
-4. Upload database.sqlite and reconfigure settings
+### Moving from a version that already uses PostgreSQL with this Prisma schema:
+
+1.  Backup your PostgreSQL database.
+2.  Backup your `settings.yml` file.
+3.  Replace the application files with the new version.
+4.  Run `npm install` to get any new dependencies.
+5.  Run `DATABASE_URL="your_constructed_db_url_from_settings" npx prisma db push` to apply any schema changes. See [DATABASE_SETUP.md](DATABASE_SETUP.md) for how to construct the `DATABASE_URL`.
+6.  Review your `settings.yml` against `settings_example.yml` for any new configuration options.
 
 <hr>
 

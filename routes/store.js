@@ -1,8 +1,8 @@
-const adminjs = require("./admin");
+const adminjs = require("./admin.js");
 const logToDiscord = require('../handlers/log');
 const settings = require('../handlers/readSettings').settings(); 
 
-module.exports.load = async function(app, db) {
+module.exports.load = async function(app, db) { // db is Prisma Client
   const buyResource = async (req, res, resourceType, resourceName) => {
     if (!req.session || !req.session.pterodactyl || !req.session.userinfo) return res.redirect("/login");
 
@@ -10,52 +10,81 @@ module.exports.load = async function(app, db) {
       return res.redirect("/dashboard?err=STOREDISABLED");
     }
 
-    const amount = parseInt(req.query.amount);
-    if (!amount || isNaN(amount) || amount < 1 || amount > 10) return res.send("Invalid amount");
-
-    const userCoins = (await db.get(`coins-${req.session.userinfo.id}`)) || 0;
-    const resourceCap = (await db.get(`${resourceType}-${req.session.userinfo.id}`)) || 0;
-
-    // just idk
-    if (resourceCap + amount > settings.coins.store.storelimits[resourceType]) {
-      const resourceName = resourceType.toUpperCase();
-      return res.redirect(`/store?err=MAX${resourceName}EXCEEDED`);
+    const amountOfPackagesToBuy = parseInt(req.query.amount); // This is the number of "packages" of the resource
+    if (!amountOfPackagesToBuy || isNaN(amountOfPackagesToBuy) || amountOfPackagesToBuy < 1 || amountOfPackagesToBuy > 10) { // Assuming max 10 packages at a time
+        return res.send("Invalid amount of packages selected.");
     }
 
-  // Old code : if (ramcap + amount > settings.storelimits.ram) return res.redirect(failedcallback + "?err=MAXRAMEXCEETED");
-    const per = settings.coins.store[resourceType].per * amount;
-    const cost = settings.coins.store[resourceType].cost * amount;
+    const discordUserId = req.session.userinfo.id;
+    const user = await db.user.findUnique({ where: { id: discordUserId } });
 
-    if (userCoins < cost) return res.redirect(`/store?err=CANNOTAFFORD`);
-
-    const newUserCoins = userCoins - cost;
-    const newResource = resourceCap + amount;
-    if (newUserCoins === 0) {
-      await db.delete(`coins-${req.session.userinfo.id}`);
-      await db.set(`${resourceType}-${req.session.userinfo.id}`, newResource);
-    } else {
-      await db.set(`coins-${req.session.userinfo.id}`, newUserCoins);
-      await db.set(`${resourceType}-${req.session.userinfo.id}`, newResource);
+    if (!user) {
+      console.error(`Store Error: User ${discordUserId} not found in DB.`);
+      return res.redirect("/login?err=USERNOTFOUND");
     }
 
-    let extra = await db.get(`extra-${req.session.userinfo.id}`) || {
-      ram: 0,
-      disk: 0,
-      cpu: 0,
-      servers: 0 
-    };
-    extra[resourceType] = extra[resourceType] + per;
-
-    if (Object.values(extra).every(val => val === 0)) {
-      await db.delete(`extra-${req.session.userinfo.id}`);
-    } else {
-      await db.set(`extra-${req.session.userinfo.id}`, extra);
+    const storeConfigForResource = settings.coins.store[resourceType];
+    if (!storeConfigForResource) {
+        console.error(`Store Error: Configuration for resourceType '${resourceType}' not found.`);
+        return res.redirect("/store?err=INVALIDRESOURCECONFIG");
     }
 
-    adminjs.suspend(req.session.userinfo.id);
+    const valuePerPackage = storeConfigForResource.per; // e.g., 1024 for RAM (MB per package)
+    const costPerPackage = storeConfigForResource.cost;
+    const storeLimitForResourceValue = settings.coins.store.storelimits[resourceType]; // e.g., 8192 for RAM (total MB limit)
 
-    logToDiscord(
-      "resources purchased",
+    let currentUserExtraValue;
+    let extraFieldToUpdate;
+
+    switch (resourceType) {
+        case "ram": currentUserExtraValue = user.extraRam || 0; extraFieldToUpdate = "extraRam"; break;
+        case "disk": currentUserExtraValue = user.extraDisk || 0; extraFieldToUpdate = "extraDisk"; break;
+        case "cpu": currentUserExtraValue = user.extraCpu || 0; extraFieldToUpdate = "extraCpu"; break;
+        case "servers": currentUserExtraValue = user.extraServers || 0; extraFieldToUpdate = "extraServers"; break;
+        default:
+            console.error(`Store Error: Unknown resourceType '${resourceType}'.`);
+            return res.redirect("/store?err=INVALIDRESOURCETYPE");
+    }
+
+    const totalResourceValueToBuy = valuePerPackage * amountOfPackagesToBuy;
+
+    // Check against store limits (for total accumulated value of this resource type)
+    if (currentUserExtraValue + totalResourceValueToBuy > storeLimitForResourceValue) {
+      const resourceNameUpper = resourceType.toUpperCase();
+      return res.redirect(`/store?err=MAX${resourceNameUpper}EXCEEDED&limit=${storeLimitForResourceValue}&current=${currentUserExtraValue}&needed=${totalResourceValueToBuy}`);
+    }
+
+    const totalCost = costPerPackage * amountOfPackagesToBuy;
+    const currentUserCoins = user.coins || 0;
+
+    if (currentUserCoins < totalCost) return res.redirect(`/store?err=CANNOTAFFORD`);
+
+    const finalUserCoins = currentUserCoins - totalCost;
+    const finalUserExtraValueForType = currentUserExtraValue + totalResourceValueToBuy;
+
+    try {
+        await db.user.update({
+            where: { id: discordUserId },
+            data: {
+                coins: finalUserCoins,
+                [extraFieldToUpdate]: finalUserExtraValueForType
+            }
+        });
+
+        adminjs.suspend(discordUserId, db); // Pass db instance
+
+        logToDiscord(
+          "resources purchased",
+          `${req.session.userinfo.username} bought ${amountOfPackagesToBuy} package(s) of ${resourceName} (total ${totalResourceValueToBuy} units) from the store for \`${totalCost}\` Credits.`
+        );
+        res.redirect("/store?success=PURCHASECOMPLETE");
+    } catch (error) {
+        console.error(`Store Error: Failed to update user ${discordUserId} for ${resourceType} purchase:`, error);
+        return res.redirect("/store?err=PURCHASEFAILED");
+    }
+  };
+
+  app.get("/buyram", async (req, res) => buyResource(req, res, "ram", "RAM"));
       `${req.session.userinfo.username} bought ${per} ${resourceName} from the store for \`${cost}\` Credits.`
     );
 

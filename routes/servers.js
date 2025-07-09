@@ -1,6 +1,6 @@
 const settings = require('../handlers/readSettings').settings(); 
 const adminjs = require("./admin.js");
-const getPteroUser = require('../handlers/getPteroUser');
+const { getPteroUser } = require('../handlers/getPteroUser'); // Updated import
 const logToDiscord = require("../handlers/log");
 const fetch = require("node-fetch");
 
@@ -23,31 +23,46 @@ module.exports.load = async (app, db) => {
       
           if (name.length > 191) return res.redirect("/servers?err=BIGSERVERNAME");
       
-          const packagename = await db.get(`package-${req.session.userinfo.id}`);
-          const package = settings.packages.list[packagename || settings.packages.default];
-          const extra = await db.get(`extra-${req.session.userinfo.id}`) || {
-            ram: 0,
-            disk: 0,
-            cpu: 0,
-            servers: 0
+          const discordUserId = req.session.userinfo.id;
+          const user = await db.user.findUnique({ where: { id: discordUserId } });
+
+          if (!user) {
+              console.error(`Create server error: User ${discordUserId} not found in DB.`);
+              return res.redirect("/login?err=USERNOTFOUND");
+          }
+
+          const userPackageName = user.packageName || settings.packages.default;
+          const currentPackageDetails = settings.packages.list[userPackageName];
+          if (!currentPackageDetails) {
+              console.error(`Create server error: Package ${userPackageName} not found in settings for user ${discordUserId}.`);
+              return res.redirect("/servers?err=PACKAGENOTFOUND");
+          }
+
+          const userExtraResources = {
+            ram: user.extraRam || 0,
+            disk: user.extraDisk || 0,
+            cpu: user.extraCpu || 0,
+            servers: user.extraServers || 0
           };
       
-          let ram2 = 0, disk2 = 0, cpu2 = 0;
+          let currentTotalRamUsage = 0;
+          let currentTotalDiskUsage = 0;
+          let currentTotalCpuUsage = 0;
           const serversData = req.session.pterodactyl.relationships.servers.data;
       
           serversData.forEach(server => {
-              ram2 += server.attributes.limits.memory;
-              disk2 += server.attributes.limits.disk;
-              cpu2 += server.attributes.limits.cpu;
+               currentTotalRamUsage += server.attributes.limits.memory;
+               currentTotalDiskUsage += server.attributes.limits.disk;
+               currentTotalCpuUsage += server.attributes.limits.cpu;
           });
         
-          if (serversData.length >= package.servers + extra.servers) return res.redirect("/servers?err=TOOMUCHSERVERS");
+          if (serversData.length >= currentPackageDetails.servers + userExtraResources.servers) return res.redirect("/servers?err=TOOMUCHSERVERS");
           
           const location = req.query.location;
           if (!Object.prototype.hasOwnProperty.call(settings.locations, location)) return res.redirect("/servers?err=INVALIDLOCATION");
           
           const requiredpackage = settings.locations[location].package;
-          if (requiredpackage && !requiredpackage.includes(packagename || settings.packages.default)) return res.redirect("/servers?err=PREMIUMLOCATION");
+          if (requiredpackage && !requiredpackage.includes(userPackageName)) return res.redirect("/servers?err=PREMIUMLOCATION");
           
           const egg = req.query.egg;
           const egginfo = settings.eggs[egg];
@@ -60,14 +75,14 @@ module.exports.load = async (app, db) => {
           if (isNaN(cpu) || isNaN(ram) || isNaN(disk)) return res.redirect("/servers?err=NOTANUMBER");
 
           // Exceed resources
-          if (ram2 + ram > package.ram + extra.ram)
-              return res.redirect(`/servers?err=EXCEEDRAM&num=${package.ram + extra.ram - ram2}`);
+          if (currentTotalRamUsage + ram > currentPackageDetails.ram + userExtraResources.ram)
+              return res.redirect(`/servers?err=EXCEEDRAM&num=${currentPackageDetails.ram + userExtraResources.ram - currentTotalRamUsage}`);
           
-          if (disk2 + disk > package.disk + extra.disk)
-              return res.redirect(`/servers?err=EXCEEDDISK&num=${package.disk + extra.disk - disk2}`);
+          if (currentTotalDiskUsage + disk > currentPackageDetails.disk + userExtraResources.disk)
+              return res.redirect(`/servers?err=EXCEEDDISK&num=${currentPackageDetails.disk + userExtraResources.disk - currentTotalDiskUsage}`);
           
-          if (cpu2 + cpu > package.cpu + extra.cpu)
-              return res.redirect(`/servers?err=EXCEEDCPU&num=${package.cpu + extra.cpu - cpu2}`);
+          if (currentTotalCpuUsage + cpu > currentPackageDetails.cpu + userExtraResources.cpu)
+              return res.redirect(`/servers?err=EXCEEDCPU&num=${currentPackageDetails.cpu + userExtraResources.cpu - currentTotalCpuUsage}`);
           
           // Little resources
           if (egginfo.minimum && egginfo.minimum.ram && ram < egginfo.minimum.ram)
@@ -90,7 +105,12 @@ module.exports.load = async (app, db) => {
               return res.redirect(`/servers?err=TOOMUCHCPU&num=${egginfo.maximum.cpu}`);
         
           let specs = egginfo.info;
-          specs.user = await db.get(`users-${req.session.userinfo.id}`) || {};
+          // specs.user should be the Pterodactyl User ID
+          if (!user.pterodactylId) {
+            console.error(`Create server error: User ${discordUserId} does not have a Pterodactyl ID linked.`);
+            return res.redirect("/servers?err=NOPTEROID");
+          }
+          specs.user = user.pterodactylId;
           specs.limits = specs.limits || {
             swap: 0,
             io: 500,
@@ -108,14 +128,18 @@ module.exports.load = async (app, db) => {
           };
           specs.deploy.locations = [location];
         
-          // Make sure user has enough coins
-          const createdServer = await db.get(`createdserver-${req.session.userinfo.id}`) || false;
-          const coins = await db.get(`coins-${req.session.userinfo.id}`) || 0;
-          const cost = settings.servercreation.cost;
+          const serverCreationCost = settings.servercreation.cost;
+          let userCoins = user.coins || 0;
         
-          if (createdServer && coins < cost) return res.redirect("/servers/new?err=TOOLITTLECOINS");
+          // Charge for server creation if user has created a server before and cost is applicable
+          if (user.hasCreatedServer && serverCreationCost > 0) {
+            if (userCoins < serverCreationCost) {
+              return res.redirect("/servers/new?err=TOOLITTLECOINSFORCREATION");
+            }
+            userCoins -= serverCreationCost; // Deduct coins, will be part of the user update transaction
+          }
         
-          const serverResponse = await fetch(`${settings.pterodactyl.domain}/api/application/servers`, {
+          const pterodactylResponse = await fetch(`${settings.pterodactyl.domain}/api/application/servers`, {
               method: "POST",
               headers: {
                   'Content-Type': 'application/json',
@@ -125,19 +149,40 @@ module.exports.load = async (app, db) => {
               body: JSON.stringify(specs)
           });
         
-          if (!serverResponse.ok) {
-              console.error(await serverResponse.text());
+          if (!pterodactylResponse.ok) {
+              const errorBody = await pterodactylResponse.text();
+              console.error("Pterodactyl API Error on server creation:", errorBody);
               return res.redirect("/servers?err=ERRORONCREATE");
           }
         
-          const serverInfo = await serverResponse.json();
-          req.session.pterodactyl.relationships.servers.data.push(serverInfo);
-        
-          // Bill user if they have created a server before
-          if (createdServer) await db.set(`coins-${req.session.userinfo.id}`, coins - cost);
-          
-          await db.set(`lastrenewal-${serverInfo.attributes.id}`, Date.now()); // c
-          await db.set(`createdserver-${req.session.userinfo.id}`, true);
+          const newPterodactylServerInfo = await pterodactylResponse.json();
+          req.session.pterodactyl.relationships.servers.data.push(newPterodactylServerInfo);
+
+          // Update user and create server renewal record in a transaction
+          try {
+            await db.$transaction([
+              db.user.update({
+                where: { id: discordUserId },
+                data: {
+                  coins: userCoins, // Updated coin balance
+                  hasCreatedServer: true
+                }
+              }),
+              db.serverRenewal.create({
+                data: {
+                  pterodactylServerId: newPterodactylServerInfo.attributes.id.toString(),
+                  userId: discordUserId,
+                  lastRenewedAt: new Date() // Set initial renewal date
+                }
+              })
+            ]);
+          } catch (transactionError) {
+            console.error("Transaction error during server creation (DB update):", transactionError);
+            // Potentially try to delete the server from Pterodactyl if DB update fails to prevent orphans
+            // This is complex recovery logic. For now, log and error out.
+            await fetch(`${settings.pterodactyl.domain}/api/application/servers/${newPterodactylServerInfo.attributes.id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${settings.pterodactyl.key}` } });
+            return res.redirect("/servers?err=DBERRORONCREATE");
+          }
         
           logToDiscord(
             "created server",
@@ -175,37 +220,51 @@ module.exports.load = async (app, db) => {
         
         if (isNaN(cpu) || isNaN(ram) || isNaN(disk)) return res.redirect(`/servers/edit?id=${serverId}&err=MISSINGVARIABLE`);
         
-        let packagename = await db.get(`package-${req.session.userinfo.id}`);
-        let package = settings.packages.list[packagename || settings.packages.default];
+        const discordUserId = req.session.userinfo.id;
+        const user = await db.user.findUnique({ where: { id: discordUserId } });
+
+        if (!user) {
+            console.error(`Modify server error: User ${discordUserId} not found in DB.`);
+            return res.redirect("/login?err=USERNOTFOUND");
+        }
+
+        const userPackageName = user.packageName || settings.packages.default;
+        const currentPackageDetails = settings.packages.list[userPackageName];
+        if (!currentPackageDetails) {
+            console.error(`Modify server error: Package ${userPackageName} not found in settings for user ${discordUserId}.`);
+            return res.redirect(`/servers/edit?id=${serverId}&err=PACKAGENOTFOUND`);
+        }
         
+        const userExtraResources = {
+            ram: user.extraRam || 0,
+            disk: user.extraDisk || 0,
+            cpu: user.extraCpu || 0,
+            // servers: user.extraServers || 0 // Not directly used for modify checks other than total count
+        };
+
         let serverDataExceptCurrent = serverData.filter(server => server.attributes.id.toString() !== serverId);
         
-        let cpu2 = 0, ram2 = 0, disk2 = 0;
+        let otherServersRamUsage = 0;
+        let otherServersDiskUsage = 0;
+        let otherServersCpuUsage = 0;
         serverDataExceptCurrent.forEach(server => {
-          cpu2 += server.attributes.limits.cpu;
-          ram2 += server.attributes.limits.memory;
-          disk2 += server.attributes.limits.disk;
+          otherServersCpuUsage += server.attributes.limits.cpu;
+          otherServersRamUsage += server.attributes.limits.memory;
+          otherServersDiskUsage += server.attributes.limits.disk;
         });
         
         let egginfo = Object.values(settings.eggs).find(egg => egg.info.egg === serverToModify.attributes.egg);
         if (!egginfo) return res.redirect(`/servers/edit?id=${serverId}&err=MISSINGEGG`);
         
-        let extra = await db.get(`extra-${req.session.userinfo.id}`) || {
-          ram: 0,
-          disk: 0,
-          cpu: 0,
-          servers: 0
-        };
+        // Exceed resources (comparing requested new values for *this* server + usage of *other* servers against total limits)
+        if (otherServersRamUsage + ram > currentPackageDetails.ram + userExtraResources.ram)
+          return res.redirect(`/servers/edit?id=${serverId}&err=EXCEEDRAM&num=${currentPackageDetails.ram + userExtraResources.ram - otherServersRamUsage}`);
         
-        // Exceed resources
-        if (ram2 + ram > package.ram + extra.ram) 
-          return res.redirect(`/servers/edit?id=${serverId}&err=EXCEEDRAM&num=${package.ram + extra.ram - ram2}`);
+        if (otherServersDiskUsage + disk > currentPackageDetails.disk + userExtraResources.disk)
+          return res.redirect(`/servers/edit?id=${serverId}&err=EXCEEDDISK&num=${currentPackageDetails.disk + userExtraResources.disk - otherServersDiskUsage}`);
         
-        if (disk2 + disk > package.disk + extra.disk) 
-          return res.redirect(`/servers/edit?id=${serverId}&err=EXCEEDDISK&num=${package.disk + extra.disk - disk2}`);
-        
-        if (cpu2 + cpu > package.cpu + extra.cpu) 
-          return res.redirect(`/servers/edit?id=${serverId}&err=EXCEEDCPU&num=${package.cpu + extra.cpu - cpu2}`);
+        if (otherServersCpuUsage + cpu > currentPackageDetails.cpu + userExtraResources.cpu)
+          return res.redirect(`/servers/edit?id=${serverId}&err=EXCEEDCPU&num=${currentPackageDetails.cpu + userExtraResources.cpu - otherServersCpuUsage}`);
         
         // Little resources
         if (egginfo.minimum.ram && ram < egginfo.minimum.ram) 
@@ -263,7 +322,7 @@ module.exports.load = async (app, db) => {
         // G
         serverDataExceptCurrent.push(serverInfoText);
         req.session.pterodactyl.relationships.servers.data = serverDataExceptCurrent;
-        adminjs.suspend(req.session.userinfo.id);
+        adminjs.suspend(req.session.userinfo.id, db); // Pass db instance
         
         res.redirect("/servers?err=MODIFYSERVER");
       } catch (error) {
@@ -294,10 +353,14 @@ module.exports.load = async (app, db) => {
     
       if (!deletionResults.ok) return res.send("An error has occurred while attempting to delete the server.");
     
-      req.session.pterodactyl.relationships.servers.data = req.session.pterodactyl.relationships.servers.data.filter(server => server.attributes.id != req.query.id);
-      await db.delete(`lastrenewal-${req.query.id}`);
+      req.session.pterodactyl.relationships.servers.data = req.session.pterodactyl.relationships.servers.data.filter(server => server.attributes.id.toString() !== req.query.id);
+
+      // Delete server renewal record
+      await db.serverRenewal.deleteMany({
+        where: { pterodactylServerId: req.query.id }
+      });
     
-      adminjs.suspend(req.session.userinfo.id);
+      adminjs.suspend(req.session.userinfo.id, db); // Pass db instance
     
       logToDiscord(
         "deleted server",
@@ -314,9 +377,22 @@ module.exports.load = async (app, db) => {
   // A
   
   app.get(`/api/createdServer`, async (req, res) => {
-    if (!req.session.pterodactyl) return res.json({ error: true, message: `You must be logged in.` });
+    if (!req.session.pterodactyl || !req.session.userinfo || !req.session.userinfo.id) {
+      return res.json({ error: true, message: `You must be logged in and have a valid session.` });
+    }
 
-    const createdServer = await db.get(`createdserver-${req.session.userinfo.id}`)
-    return res.json({ created: createdServer ?? false, cost: settings.renewals.cost })
+    const discordUserId = req.session.userinfo.id;
+    const user = await db.user.findUnique({
+      where: { id: discordUserId },
+      select: { hasCreatedServer: true }
+    });
+
+    if (!user) {
+      // This case should ideally not be reached if the user has a pterodactyl session.
+      return res.json({ error: true, message: "User not found in database." });
+    }
+    // The 'cost' here was settings.renewals.cost in original, but servercreation.cost seems more appropriate if it's about first server.
+    // Sticking to original for now, but this might be a point of confusion.
+    return res.json({ created: user.hasCreatedServer || false, cost: settings.servercreation.cost });
   })
 };

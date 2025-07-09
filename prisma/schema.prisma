@@ -1,0 +1,103 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @unique // Discord User ID
+  pterodactylId     Int?      @unique // Pterodactyl panel ID, can be optional if user signs up but doesn't have one yet
+  email             String?   @unique // Optional: if available from Discord auth
+  username          String?             // Optional: Discord username
+
+  coins             Int       @default(0)
+  packageName       String    @default("default") // Assuming 'default' is a sensible default from settings
+
+  extraRam          Int       @default(0)
+  extraDisk         Int       @default(0)
+  extraCpu          Int       @default(0)
+  extraServers      Int       @default(0)
+
+  ipAddress         String?
+  hasCreatedServer  Boolean   @default(false)
+
+  // Timestamps
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  // Relations
+  j4rEntries        UserJ4REntry[]
+  serverRenewals    ServerRenewal[] // A user can have multiple servers they are responsible for renewing
+}
+
+model Coupon {
+  code          String    @id @unique
+  description   String?
+  coins         Int?      @default(0)
+  ram           Int?      @default(0)
+  disk          Int?      @default(0)
+  cpu           Int?      @default(0)
+  servers       Int?      @default(0)
+  pterodactylId Int?      // In case a coupon gives a specific Pterodactyl user ID some benefit directly (unlikely)
+  maxUses       Int?      // Maximum number of times the coupon can be used
+  usedCount     Int       @default(0) // How many times it has been used
+  expiresAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// For 'lastrenewal-${serverid}'
+// We need to decide if serverid is the Pterodactyl server ID or an internal one.
+// Assuming Pterodactyl server ID for now.
+model ServerRenewal {
+  pterodactylServerId String    @id @unique // Pterodactyl Server ID (usually a short alphanumeric string)
+  userId              String    // Link to the User who owns/manages this server
+  user                User      @relation(fields: [userId], references: [id])
+  lastRenewedAt       DateTime
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+// For 'vpncheckcache-${ip}'
+model VpnCheckCache {
+  ipAddress     String    @id @unique
+  isVpn         Boolean
+  checkedAt     DateTime  @default(now())
+  expiresAt     DateTime
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// For 'j4rs-${userid}' which seemed to be a list of strings (server IDs they joined?)
+// This suggests a User might have multiple J4R entries.
+// Simpler approach: if j4rs-${userid} stores a list of IDs of J4R servers they've interacted with:
+model UserJ4REntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  j4rServerId String   // ID of the J4R server (e.g., from settings.j4r.ads)
+  claimedAt DateTime @default(now())
+
+  @@unique([userId, j4rServerId]) // User can only claim a J4R server once
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PterodactylCache {
+  key       String   @id @unique
+  value     Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
