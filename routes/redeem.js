@@ -89,9 +89,5 @@ module.exports.load = async function(app, db) { // db is Prisma Client
       return res.redirect(`/redeem?err=COUPONREDEMPTIONFAILED`);
     }
   });
-}
-    );
-
-    res.redirect(`/redeem?err=SUCCESSCOUPONCODE`);
-  });
-}
+};
+// Removed extraneous lines that were causing syntax error.
