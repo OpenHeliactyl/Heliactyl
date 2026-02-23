@@ -1,20 +1,20 @@
 {
   "version": "12.7.1",
-  "name": "Heliactyl",
-  "letter": "H",
+  "name": "Axite Cloud",
+  "letter": "A",
   "defaulttheme": "default",
-  "timezone": "Europe/London",
+  "timezone": "Asia/Kolkata",
   "resources": {
     "_note": "Options: MB, GB. This is only used on the user side, admin will use GB.",
     "type": "MB"
   },
   "website": {
-    "port": 25002,
+    "port": 6767,
     "secret": "Default Secret (Change this to any string you want)"
   },
   "pterodactyl": {
-    "domain": "https://panel.example.com",
-    "key": "ptla_0000000000000000000000000000000000000000000"
+    "domain": "https://free.axite.cloud",
+    "key": "ptla_1swZVNz8jx4hN01wF8SCZWUWtMmu0eOM1GtfiAQSgra"
   },
   "linkvertise": {
     "userid": "50000",
@@ -32,7 +32,7 @@
     "key": "100000000000000",
     "coins": 100
   },
-  "database": "sqlite://database.sqlite",
+  "database": "mongodb+srv://AeroX:AeroX@aerox.xik7huh.mongodb.net/?retryWrites=true&w=majority&appName=AeroX",
   "api": {
     "client": {
       "api": {
@@ -40,7 +40,7 @@
         "code": "Default API Key (Change this to any string you want)"
       },
       "j4r": {
-        "enabled": true,
+        "enabled": false,
         "ads": [
           {
             "name": "Example server 1",
